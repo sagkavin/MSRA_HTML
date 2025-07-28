@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Method Statement and Risk Assessment (MSRA) Tool</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Method Statement and Risk Assessment (MSRA)</h1>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="importCsvBtn">Import MSRA from CSV</button>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+            <button id="exportCsvBtnTop">Export MSRA to CSV</button>
+            <button id="convertExcelCsvBtn">Convert Excel CSV</button>
+            <button id="helpBtn">Help</button>
+            <button id="downloadTemplateBtn">Download CSV Template</button>
+        </div>
+
+        <div id="unsaved-changes-warning">
+            You have unsaved changes. Please export to CSV to save your work.
+        </div>
+
+        <div class="two-column-layout">
+            <div class="section" id="msra-info-section">
+                <h2>MSRA Information</h2>
+                <div class="form-group">
+                    <label for="jobName">Job Name:</label>
+                    <input type="text" id="jobName" placeholder="e.g., HVAC System Installation">
+                </div>
+                <div class="form-group">
+                    <label for="preparedBy">Prepared By:</label>
+                    <input type="text" id="preparedBy" placeholder="e.g., John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="contractorName">Contractor Name:</label>
+                    <input type="text" id="contractorName" placeholder="e.g., ABC Construction">
+                </div>
+                <div class="form-group">
+                    <label for="contractorPersonName">Contractor Person Name:</label>
+                    <input type="text" id="contractorPersonName" placeholder="e.g., Jane Smith">
+                </div>
+                <div class="form-group">
+                    <label for="datePrepared">Date of Preparation:</label>
+                    <input type="date" id="datePrepared">
+                </div>
+
+                <div class="checkbox-group" id="type-of-work-checkboxes">
+                    <label>Type of Work:</label>
+                    <div class="checkbox-options">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="workHeight" value="Height">
+                            <label for="workHeight">Height</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="workHot" value="Hot">
+                            <label for="workHot">Hot</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="workElectrical" value="Electrical">
+                            <label for="workElectrical">Electrical</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="workCold" value="Cold">
+                            <label for="workCold">Cold</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="workConfinedSpace" value="Confined_Space">
+                            <label for="workConfinedSpace">Confined Space</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="workLifting" value="Lifting">
+                            <label for="workLifting">Lifting</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="checkbox-group" id="ppes-to-be-used-checkboxes">
+                    <label>PPEs to be Used:</label>
+                    <div class="checkbox-options">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeSafetyShoes" value="Safety_Shoes">
+                            <label for="ppeSafetyShoes">Safety Shoes</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeGloves" value="Gloves">
+                            <label for="ppeGloves">Gloves</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeHelmet" value="Helmet">
+                            <label for="ppeHelmet">Helmet</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeGoggles" value="Goggles">
+                            <label for="ppeGoggles">Goggles</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeFaceShield" value="Face_Shield">
+                            <label for="ppeFaceShield">Face Shield</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeWeldingShield" value="Welding_Shield">
+                            <label for="ppeWeldingShield">Welding Shield</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeReflectiveVest" value="Reflective_Vest">
+                            <label for="ppeReflectiveVest">Reflective Vest</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ppeHarness" value="Harness">
+                            <label for="ppeHarness">Harness</label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="section" id="task-input-section">
+                <h2>Tasks & Risks</h2>
+                <div class="form-group">
+                    <label for="taskDescription">Task Description:</label>
+                    <textarea id="taskDescription" rows="3" placeholder="e.g., Disconnect the electrical supply to the HVAC system."></textarea>
+                </div>
+                <button id="addTaskBtn">Add New Task</button>
+
+                <div id="risk-input-area" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee;">
+                    <h3>Add Initial Risk Details to Current Task</h3>
+                    <div class="form-group">
+                        <label for="riskDescription">Risk Description:</label>
+                        <textarea id="riskDescription" rows="2" placeholder="e.g., If Cables disconnected without incoming supply cutoff, will result in electrocution."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="likelihood">Initial Likelihood:</label>
+                        <select id="likelihood">
+                            <option value="">Select Likelihood</option>
+                            <option value="5">A - Almost certain to occur in most circumstances</option>
+                            <option value="4">B - Likely to occur frequently</option>
+                            <option value="3">C - Possibly and likely to occur at sometime</option>
+                            <option value="2">D - Unlikely to occur but could happen</option>
+                            <option value="1">E - May occur but only in rare circumstances</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="impact">Initial Severity:</label>
+                        <select id="impact">
+                            <option value="">Select Severity</option>
+                            <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
+                            <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
+                            <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
+                            <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
+                            <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
+                        </select>
+                    </div>
+                    <button id="addRiskToTaskBtn">Add Risk to Current Task</button>
+                </div>
+            </div>
+        </div> <hr style="border: 0; height: 1px; background: #e0e0e0; margin: 30px 0;">
+
+        <div class="section" id="msra-overview-section">
+            <div id="msra-overview-header">
+                <img src="https://cdn.brandfetch.io/idYddXiVpj/w/800/h/264/theme/dark/logo.png" alt="Schneider Electric Logo" onerror="this.onerror=null;this.src='https://placehold.co/150x50/cccccc/333333?text=Logo';" />
+                <h2>Method Statement and Risk Assessment (MSRA)</h2>
+            </div>
+            <div id="msra-summary-info">
+                </div>
+            <div class="table-container">
+                <table id="msraTable">
+                    <thead>
+                        <tr>
+                            <th title="Task ID">Task<br>ID</th>
+                            <th title="Task Description">Task<br>Desc.</th>
+                            <th title="Risk ID">Risk<br>ID</th>
+                            <th title="Risk Description">Risk<br>Desc.</th>
+                            <th title="Initial Likelihood">Init.<br>L</th>
+                            <th title="Initial Severity">Init.<br>S</th>
+                            <th title="Initial Risk Level">Init.<br>Risk Level</th>
+                            <th title="Countermeasure">Countermeasure</th>
+                            <th title="New Likelihood">New<br>L</th>
+                            <th title="New Severity">New<br>S</th>
+                            <th title="Residual Risk Level">Residual<br>Risk Level</th>
+                            <th title="Risk Actions">Risk<br>Actions</th>
+                            <th title="Task Actions">Task<br>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button id="exportCsvBtn">Export MSRA to CSV</button>
+                <button id="exportImageBtn">Export MSRA to Image</button>
+                <button id="exportPdfBtn">Export MSRA to PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="countermeasureModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="closeModalBtn">×</button>
+            <h2>Add Countermeasure & Residual Risk</h2>
+            <p>For Risk ID: <span id="modalRiskId"></span></p>
+            <div class="form-group">
+                <label for="modalCountermeasure">Countermeasure / Control Measures:</label>
+                <textarea id="modalCountermeasure" rows="3" placeholder="Describe the control measures"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="modalNewLikelihood">New Likelihood (After Countermeasure):</label>
+                <select id="modalNewLikelihood">
+                    <option value="">Select New Likelihood</option>
+                    <option value="5">A - Almost certain to occur in most circumstances</option>
+                    <option value="4">B - Likely to occur frequently</option>
+                    <option value="3">C - Possibly and likely to occur at sometime</option>
+                    <option value="2">D - Unlikely to occur but could happen</option>
+                    <option value="1">E - May occur but only in rare circumstances</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="modalNewImpact">New Severity (After Countermeasure):</label>
+                <select id="modalNewImpact">
+                    <option value="">Select New Severity</option>
+                    <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
+                    <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
+                    <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
+                    <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
+                    <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
+                </select>
+            </div>
+            <button id="saveCountermeasureBtn">Save Countermeasure</button>
+        </div>
+    </div>
+
+    <div id="addRiskToExistingTaskModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="closeAddRiskModalBtn">×</button>
+            <h2>Add Risk to Task <span id="addRiskModalTaskId"></span></h2>
+            <div class="form-group">
+                <label for="addRiskModalDescription">Risk Description:</label>
+                <textarea id="addRiskModalDescription" rows="2" placeholder="e.g., If Cables disconnected without incoming supply cutoff, will result in electrocution."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="addRiskModalLikelihood">Initial Likelihood:</label>
+                <select id="addRiskModalLikelihood">
+                    <option value="">Select Likelihood</option>
+                    <option value="5">A - Almost certain to occur in most circumstances</option>
+                    <option value="4">B - Likely to occur frequently</option>
+                    <option value="3">C - Possibly and likely to occur at sometime</option>
+                    <option value="2">D - Unlikely to occur but could happen</option>
+                    <option value="1">E - May occur but only in rare circumstances</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="addRiskModalImpact">Initial Severity:</label>
+                <select id="addRiskModalImpact">
+                    <option value="">Select Severity</option>
+                    <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
+                    <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
+                    <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
+                    <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
+                    <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
+                </select>
+            </div>
+            <button id="saveAddRiskModalBtn">Add Risk</button>
+        </div>
+    </div>
+
+    <div id="editRiskModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="closeEditRiskModalBtn">×</button>
+            <h2>Edit Risk <span id="editRiskModalRiskId"></span></h2>
+            <div class="form-group">
+                <label for="editRiskModalDescription">Risk Description:</label>
+                <textarea id="editRiskModalDescription" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="editRiskModalLikelihood">Initial Likelihood:</label>
+                <select id="editRiskModalLikelihood">
+                    <option value="5">A - Almost certain to occur in most circumstances</option>
+                    <option value="4">B - Likely to occur frequently</option>
+                    <option value="3">C - Possibly and likely to occur at sometime</option>
+                    <option value="2">D - Unlikely to occur but could happen</option>
+                    <option value="1">E - May occur but only in rare circumstances</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editRiskModalImpact">Initial Severity:</label>
+                <select id="editRiskModalImpact">
+                    <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
+                    <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
+                    <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
+                    <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
+                    <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
+                </select>
+            </div>
+            <button id="saveEditRiskModalBtn">Save Changes</button>
+        </div>
+    </div>
+
+    <div id="insertTaskModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="closeInsertTaskModalBtn">×</button>
+            <h2>Insert New Task</h2>
+            <p id="insertTaskModalContext"></p>
+            <div class="form-group">
+                <label for="insertTaskModalDescription">Task Description:</label>
+                <textarea id="insertTaskModalDescription" rows="3" placeholder="e.g., New task description"></textarea>
+            </div>
+            <button id="saveInsertTaskModalBtn">Insert Task</button>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="closeHelpModalBtn">×</button>
+            <h2>What is an MSRA?</h2>
+            <p>
+                A Method Statement and Risk Assessment (MSRA) is a comprehensive document that details how a specific task will be performed safely. It outlines the step-by-step procedure, required equipment, and personnel, while simultaneously identifying potential hazards at each stage. The MSRA then evaluates the risks associated with these hazards and specifies the necessary control measures to minimize or eliminate them, ensuring a safe working environment.
+            </p>
+            <h3>How To Do MSRA: THRIVE</h3>
+            <ul>
+                <li><strong>T</strong>ask: Breakdown job to step by step task.</li>
+                <li><strong>H</strong>azards: Identify what could cause harm.</li>
+                <li><strong>R</strong>isks: Assess likelihood and severity of harm.</li>
+                <li><strong>I</strong>mplement Controls: Detail how to prevent harm (safe methods).</li>
+                <li><strong>V</strong>erify & Review: Check, assign responsibility, and sign off.</li>
+                <li><strong>E</strong>xecute Safely: List each action in order.</li>
+            </ul>
+            <div class="video-container">
+                <iframe src="https://www.youtube.com/embed/c8TpqBop-DI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <p>For more information write to <a href="mailto:sagkavin@gmail.com">Kavin S A G</a></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
