@@ -1,340 +1,1111 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Method Statement and Risk Assessment (MSRA) Tool</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Libraries -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Custom styles */
+        @media print { .no-print { display: none !important; } }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #374151; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .diagonal-cell { position: relative; overflow: hidden; }
+        .diagonal-cell::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top right, transparent 49%, #d1d5db 49%, #d1d5db 51%, transparent 51%); }
+        .dark .diagonal-cell::before { background: linear-gradient(to top right, transparent 49%, #4b5563 49%, #4b5563 51%, transparent 51%); }
+        
+        /* Risk Levels */
+        .risk-level-low { background-color: #d4edda !important; color: #155724 !important; font-weight: bold; } 
+        .dark .risk-level-low { background-color: #064e3b !important; color: #d1fae5 !important; }
+        .risk-level-medium { background-color: #fff3cd !important; color: #856404 !important; font-weight: bold; }
+        .dark .risk-level-medium { background-color: #78350f !important; color: #fef3c7 !important; }
+        .risk-level-high { background-color: #f8d7da !important; color: #721c24 !important; font-weight: bold; }
+        .dark .risk-level-high { background-color: #7f1d1d !important; color: #fee2e2 !important; }
+        .risk-level-critical { background-color: #dc3545 !important; color: white !important; font-weight: bold; }
+        .dark .risk-level-critical { background-color: #991b1b !important; color: white !important; }
+        .risk-level-unknown { background-color: #e9ecef !important; color: #6c757d !important; font-weight: bold; }
+        .dark .risk-level-unknown { background-color: #374151 !important; color: #9ca3af !important; }
+        .hidden-for-export { display: none !important; }
+        
+        /* Ensure newlines are respected in table cells */
+        .whitespace-pre-wrap { white-space: pre-wrap; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Method Statement and Risk Assessment (MSRA)</h1>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-200">
 
-        <div style="text-align: center; margin-bottom: 20px;">
-            <button id="importCsvBtn">Import MSRA from CSV</button>
-            <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
-            <button id="exportCsvBtnTop">Export MSRA to CSV</button>
-            <button id="convertExcelCsvBtn">Convert Excel CSV</button>
-            <button id="helpBtn">Help</button>
-            <button id="downloadTemplateBtn">Download CSV Template</button>
+    <div class="container mx-auto px-4 py-8" style="max-width: 98%;">
+        
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white text-center md:text-left">Method Statement & Risk Assessment</h1>
+            <button id="darkModeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+                <svg id="sunIcon" class="w-6 h-6 hidden dark:block text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg id="moonIcon" class="w-6 h-6 block dark:hidden text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 24.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </div>
 
-        <div id="unsaved-changes-warning">
-            You have unsaved changes. Please export to CSV to save your work.
+        <div class="flex flex-wrap justify-center gap-3 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <button onclick="window.triggerImport()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-file-import"></i> Import CSV
+            </button>
+            <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="window.importCsvFile(this)">
+            
+            <button onclick="window.performCsvExport()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-file-csv"></i> Export CSV
+            </button>
+            
+            <button onclick="window.convertExcelCsv()" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-file-excel"></i> Convert Excel CSV
+            </button>
+            
+            <button onclick="window.downloadTemplate()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-download"></i> Template
+            </button>
+            
+            <button onclick="window.resetTool()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Reset
+            </button>
+            
+            <button onclick="document.getElementById('helpModal').style.display='flex'" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-circle-question"></i> Help
+            </button>
         </div>
 
-        <div class="two-column-layout">
-            <div class="section" id="msra-info-section">
-                <h2>MSRA Information</h2>
-                <div class="form-group">
-                    <label for="jobName">Job Name:</label>
-                    <input type="text" id="jobName" placeholder="e.g., HVAC System Installation">
-                </div>
-                <div class="form-group">
-                    <label for="preparedBy">Prepared By:</label>
-                    <input type="text" id="preparedBy" placeholder="e.g., John Doe">
-                </div>
-                <div class="form-group">
-                    <label for="contractorName">Contractor Name:</label>
-                    <input type="text" id="contractorName" placeholder="e.g., ABC Construction">
-                </div>
-                <div class="form-group">
-                    <label for="contractorPersonName">Contractor Person Name:</label>
-                    <input type="text" id="contractorPersonName" placeholder="e.g., Jane Smith">
-                </div>
-                <div class="form-group">
-                    <label for="datePrepared">Date of Preparation:</label>
-                    <input type="date" id="datePrepared">
-                </div>
+        <div id="unsaved-changes-warning" class="hidden mb-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow-sm dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-600" role="alert">
+            <p class="font-bold">Unsaved Changes</p>
+            <p>You have unsaved changes. Please export to CSV to save your work.</p>
+        </div>
 
-                <div class="checkbox-group" id="type-of-work-checkboxes">
-                    <label>Type of Work:</label>
-                    <div class="checkbox-options">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="workHeight" value="Height">
-                            <label for="workHeight">Height</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="workHot" value="Hot">
-                            <label for="workHot">Hot</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="workElectrical" value="Electrical">
-                            <label for="workElectrical">Electrical</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="workCold" value="Cold">
-                            <label for="workCold">Cold</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="workConfinedSpace" value="Confined_Space">
-                            <label for="workConfinedSpace">Confined Space</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="workLifting" value="Lifting">
-                            <label for="workLifting">Lifting</label>
-                        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div id="msra-info-section" class="bg-blue-50 dark:bg-gray-800 p-6 rounded-xl shadow-md border border-blue-100 dark:border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white border-b pb-2 border-gray-200 dark:border-gray-700">MSRA Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Job Name</label><input type="text" id="jobName" class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Prepared By</label><input type="text" id="preparedBy" class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Contractor Name</label><input type="text" id="contractorName" class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Contractor Person</label><input type="text" id="contractorPersonName" class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    <div class="md:col-span-2"><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Date</label><input type="date" id="datePrepared" class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Type of Work</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 checkbox-group" id="type-of-work-checkboxes">
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Height" class="form-checkbox text-blue-600 rounded"><span class="text-sm dark:text-gray-200">Height</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Hot" class="form-checkbox text-blue-600 rounded"><span class="text-sm dark:text-gray-200">Hot</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Electrical" class="form-checkbox text-blue-600 rounded"><span class="text-sm dark:text-gray-200">Electrical</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Cold" class="form-checkbox text-blue-600 rounded"><span class="text-sm dark:text-gray-200">Cold</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Confined_Space" class="form-checkbox text-blue-600 rounded"><span class="text-sm dark:text-gray-200">Confined Space</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Lifting" class="form-checkbox text-blue-600 rounded"><span class="text-sm dark:text-gray-200">Lifting</span></label>
                     </div>
                 </div>
-
-                <div class="checkbox-group" id="ppes-to-be-used-checkboxes">
-                    <label>PPEs to be Used:</label>
-                    <div class="checkbox-options">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeSafetyShoes" value="Safety_Shoes">
-                            <label for="ppeSafetyShoes">Safety Shoes</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeGloves" value="Gloves">
-                            <label for="ppeGloves">Gloves</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeHelmet" value="Helmet">
-                            <label for="ppeHelmet">Helmet</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeGoggles" value="Goggles">
-                            <label for="ppeGoggles">Goggles</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeFaceShield" value="Face_Shield">
-                            <label for="ppeFaceShield">Face Shield</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeWeldingShield" value="Welding_Shield">
-                            <label for="ppeWeldingShield">Welding Shield</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeReflectiveVest" value="Reflective_Vest">
-                            <label for="ppeReflectiveVest">Reflective Vest</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="ppeHarness" value="Harness">
-                            <label for="ppeHarness">Harness</label>
-                        </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">PPEs Required</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 checkbox-group" id="ppes-to-be-used-checkboxes">
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Safety_Shoes" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Safety Shoes</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Gloves" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Gloves</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Helmet" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Helmet</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Goggles" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Goggles</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Face_Shield" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Face Shield</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Welding_Shield" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Welding Shield</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Reflective_Vest" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Reflective Vest</span></label>
+                        <label class="flex items-center space-x-2 p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition"><input type="checkbox" value="Harness" class="form-checkbox text-green-600 rounded"><span class="text-sm dark:text-gray-200">Harness</span></label>
                     </div>
                 </div>
-
             </div>
 
-            <div class="section" id="task-input-section">
-                <h2>Tasks & Risks</h2>
-                <div class="form-group">
-                    <label for="taskDescription">Task Description:</label>
-                    <textarea id="taskDescription" rows="3" placeholder="e.g., Disconnect the electrical supply to the HVAC system."></textarea>
+            <div id="task-input-section" class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 flex flex-col">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white border-b pb-2 border-gray-200 dark:border-gray-700">Add Tasks & Risks</h2>
+                <div class="mb-4">
+                    <label for="taskDescription" class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Task Description</label>
+                    <textarea id="taskDescription" rows="3" placeholder="e.g. Disconnect electrical supply..." class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"></textarea>
                 </div>
-                <button id="addTaskBtn">Add New Task</button>
-
-                <div id="risk-input-area" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <h3>Add Initial Risk Details to Current Task</h3>
-                    <div class="form-group">
-                        <label for="riskDescription">Risk Description:</label>
-                        <textarea id="riskDescription" rows="2" placeholder="e.g., If Cables disconnected without incoming supply cutoff, will result in electrocution."></textarea>
+                <button onclick="window.addNewTask()" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition mb-6">Add New Task</button>
+                <div id="risk-input-area" class="border-t pt-4 border-gray-200 dark:border-gray-600 mt-auto">
+                    <h3 class="text-md font-bold mb-3 text-gray-700 dark:text-gray-200">Add Initial Risk Details</h3>
+                    <div class="mb-3">
+                        <label for="riskDescription" class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Risk Description</label>
+                        <textarea id="riskDescription" rows="2" placeholder="e.g. Electrocution risk..." class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="likelihood">Initial Likelihood:</label>
-                        <select id="likelihood">
-                            <option value="">Select Likelihood</option>
-                            <option value="5">A - Almost certain to occur in most circumstances</option>
-                            <option value="4">B - Likely to occur frequently</option>
-                            <option value="3">C - Possibly and likely to occur at sometime</option>
-                            <option value="2">D - Unlikely to occur but could happen</option>
-                            <option value="1">E - May occur but only in rare circumstances</option>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label for="likelihood" class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Likelihood</label>
+                            <select id="likelihood" class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Likelihood</option>
+                                <option value="5">A - Almost certain</option>
+                                <option value="4">B - Likely</option>
+                                <option value="3">C - Possible</option>
+                                <option value="2">D - Unlikely</option>
+                                <option value="1">E - Rare</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="impact" class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Severity</label>
+                            <select id="impact" class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Select Severity</option>
+                                <option value="1">1 - Insignificant</option>
+                                <option value="2">2 - Minor</option>
+                                <option value="3">3 - Moderate</option>
+                                <option value="4">4 - Major</option>
+                                <option value="5">5 - Catastrophic</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="window.addRiskToCurrentTask()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">Add Risk</button>
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-gray-300 dark:border-gray-700 mb-8">
+
+        <div id="msra-overview-section" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div id="msra-overview-header" class="flex flex-col md:flex-row items-center gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <img src="https://cdn.brandfetch.io/idYddXiVpj/w/800/h/264/theme/dark/logo.png?c=1dxbfHSJFAPEGdCLU4o5B" alt="Logo" class="h-12 w-auto object-contain bg-white rounded p-1" onerror="this.onerror=null;this.src='https://placehold.co/150x50/cccccc/333333?text=Logo';">
+                <h2 class="text-2xl font-bold text-center md:text-left flex-grow text-gray-800 dark:text-white">Method Statement & Risk Assessment</h2>
+            </div>
+            <div id="msra-summary-info" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6 border border-gray-200 dark:border-gray-600"></div>
+            <div class="table-container custom-scrollbar overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+                <table id="msraTable" class="min-w-full text-sm text-left">
+                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold uppercase text-xs tracking-wider">
+                        <tr>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 whitespace-nowrap w-16 text-center">Task ID</th>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 min-w-[200px]">Task Description</th>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 whitespace-nowrap w-16 text-center">Risk ID</th>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 min-w-[200px]">Risk Description</th>
+                            <th class="px-2 py-3 border-b dark:border-gray-600 text-center w-12">IL</th>
+                            <th class="px-2 py-3 border-b dark:border-gray-600 text-center w-12">IS</th>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 text-center w-24">Init Lvl</th>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 min-w-[200px]">Countermeasure</th>
+                            <th class="px-2 py-3 border-b dark:border-gray-600 text-center w-12">NL</th>
+                            <th class="px-2 py-3 border-b dark:border-gray-600 text-center w-12">NS</th>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 text-center w-24">Res Lvl</th>
+                            <th class="px-4 py-3 border-b dark:border-gray-600 text-center w-32 no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"></tbody>
+                </table>
+            </div>
+            <div class="mt-8 flex flex-wrap justify-center gap-4 no-print">
+                <button id="exportCsvBtn" onclick="window.performCsvExport()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+                <button id="exportImageBtn" onclick="window.createDocumentView('image')" class="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-6 rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-image"></i> Export Image
+                </button>
+                <button id="exportPdfBtn" onclick="window.createDocumentView('pdf')" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf"></i> Export PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="countermeasureModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 relative border border-gray-200 dark:border-gray-700">
+            <button onclick="document.getElementById('countermeasureModal').style.display='none'" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white text-2xl font-bold">&times;</button>
+            <h2 class="text-xl font-bold mb-2 text-gray-800 dark:text-white">Add Countermeasure</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Risk ID: <span id="modalRiskId" class="font-mono font-bold text-blue-600 dark:text-blue-400"></span></p>
+            <div class="space-y-4">
+                <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Control Measures</label><textarea id="modalCountermeasure" rows="3" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></textarea></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">New Likelihood</label>
+                        <select id="modalNewLikelihood" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select</option>
+                            <option value="5">A - Almost certain</option>
+                            <option value="4">B - Likely</option>
+                            <option value="3">C - Possible</option>
+                            <option value="2">D - Unlikely</option>
+                            <option value="1">E - Rare</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="impact">Initial Severity:</label>
-                        <select id="impact">
-                            <option value="">Select Severity</option>
-                            <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
-                            <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
-                            <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
-                            <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
-                            <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">New Severity</label>
+                        <select id="modalNewImpact" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select</option>
+                            <option value="1">1 - Insignificant</option>
+                            <option value="2">2 - Minor</option>
+                            <option value="3">3 - Moderate</option>
+                            <option value="4">4 - Major</option>
+                            <option value="5">5 - Catastrophic</option>
                         </select>
                     </div>
-                    <button id="addRiskToTaskBtn">Add Risk to Current Task</button>
                 </div>
+                <button onclick="window.saveCountermeasure()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition shadow">Save Countermeasure</button>
             </div>
-        </div> <hr style="border: 0; height: 1px; background: #e0e0e0; margin: 30px 0;">
+        </div>
+    </div>
 
-        <div class="section" id="msra-overview-section">
-            <div id="msra-overview-header">
-                <img src="https://cdn.brandfetch.io/idYddXiVpj/w/800/h/264/theme/dark/logo.png" alt="Schneider Electric Logo" onerror="this.onerror=null;this.src='https://placehold.co/150x50/cccccc/333333?text=Logo';" />
-                <h2>Method Statement and Risk Assessment (MSRA)</h2>
-            </div>
-            <div id="msra-summary-info">
+    <div id="addRiskToExistingTaskModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 relative border border-gray-200 dark:border-gray-700">
+            <button onclick="document.getElementById('addRiskToExistingTaskModal').style.display='none'" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white text-2xl font-bold">&times;</button>
+            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Add Risk to Task <span id="addRiskModalTaskId" class="text-blue-600 dark:text-blue-400"></span></h2>
+            <div class="space-y-4">
+                <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Description</label><textarea id="addRiskModalDescription" rows="2" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></textarea></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Likelihood</label>
+                        <select id="addRiskModalLikelihood" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select</option>
+                            <option value="5">A - Almost certain</option>
+                            <option value="4">B - Likely</option>
+                            <option value="3">C - Possible</option>
+                            <option value="2">D - Unlikely</option>
+                            <option value="1">E - Rare</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Severity</label>
+                        <select id="addRiskModalImpact" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select</option>
+                            <option value="1">1 - Insignificant</option>
+                            <option value="2">2 - Minor</option>
+                            <option value="3">3 - Moderate</option>
+                            <option value="4">4 - Major</option>
+                            <option value="5">5 - Catastrophic</option>
+                        </select>
+                    </div>
                 </div>
-            <div class="table-container">
-                <table id="msraTable">
+                <button onclick="window.saveNewRiskToTask()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded transition shadow">Add Risk</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editRiskModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 relative border border-gray-200 dark:border-gray-700">
+            <button onclick="document.getElementById('editRiskModal').style.display='none'" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white text-2xl font-bold">&times;</button>
+            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Edit Risk <span id="editRiskModalRiskId" class="text-blue-600 dark:text-blue-400"></span></h2>
+            <div class="space-y-4">
+                <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Description</label><textarea id="editRiskModalDescription" rows="2" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></textarea></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Likelihood</label>
+                        <select id="editRiskModalLikelihood" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="5">A - Almost certain</option>
+                            <option value="4">B - Likely</option>
+                            <option value="3">C - Possible</option>
+                            <option value="2">D - Unlikely</option>
+                            <option value="1">E - Rare</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Severity</label>
+                        <select id="editRiskModalImpact" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="1">1 - Insignificant</option>
+                            <option value="2">2 - Minor</option>
+                            <option value="3">3 - Moderate</option>
+                            <option value="4">4 - Major</option>
+                            <option value="5">5 - Catastrophic</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="window.saveEditedRisk()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 rounded transition shadow">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="insertTaskModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 relative border border-gray-200 dark:border-gray-700">
+            <button onclick="document.getElementById('insertTaskModal').style.display='none'" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white text-2xl font-bold">&times;</button>
+            <h2 class="text-xl font-bold mb-2 text-gray-800 dark:text-white">Insert New Task</h2>
+            <p id="insertTaskModalContext" class="text-sm text-gray-500 dark:text-gray-400 mb-4"></p>
+            <div class="space-y-4">
+                <div><label class="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Description</label><textarea id="insertTaskModalDescription" rows="3" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"></textarea></div>
+                <button onclick="window.performInsertTask()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition shadow">Insert Task</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+            <button onclick="document.getElementById('helpModal').style.display='none'" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white text-2xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">What is an MSRA?</h2>
+            <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                <p class="mb-4">
+                    A Method Statement and Risk Assessment (MSRA) is a comprehensive document that details how a specific task will be performed safely.
+                </p>
+                <h3 class="text-lg font-bold mb-2 text-gray-800 dark:text-white">How To Do MSRA: THRIVE</h3>
+                <ul class="list-disc pl-5 mb-6 space-y-1">
+                    <li><strong>T</strong>ask: Breakdown job to step by step task.</li>
+                    <li><strong>H</strong>azards: Identify what could cause harm.</li>
+                    <li><strong>R</strong>isks: Assess likelihood and severity of harm.</li>
+                    <li><strong>I</strong>mplement Controls: Detail how to prevent harm.</li>
+                    <li><strong>V</strong>erify & Review: Check, assign responsibility.</li>
+                    <li><strong>E</strong>xecute Safely: List each action in order.</li>
+                </ul>
+                <div class="aspect-w-16 aspect-h-9 w-full bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <iframe src="https://www.youtube.com/embed/c8TpqBop-DI" title="YouTube video player" class="w-full h-64 md:h-80" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL VARIABLES & FUNCTIONS (Defined BEFORE usage) ---
+        const LOCAL_STORAGE_KEY = 'msra_tool_data';
+        window.msraData = { 
+            jobInfo: { jobName: '', preparedBy: '', contractorName: '', contractorPersonName: '', datePrepared: '', typeOfWork: [], ppesUsed: [] }, 
+            tasks: [] 
+        };
+        window.currentTaskId = null;
+        window.taskIdCounter = 1;
+        window.dataModified = false;
+        
+        // Temp State for Modals
+        window.targetTaskIdForNewRisk = null;
+        window.editingRiskObject = null;
+        window.editingCountermeasureRisk = null;
+        window.insertIndexForNewTask = null;
+
+        // Helpers
+        window.showCustomAlert = function(msg) {
+            const existing = document.querySelector('.custom-alert-modal'); if(existing) existing.remove();
+            const div = document.createElement('div');
+            div.className = 'custom-alert-modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[60]';
+            div.innerHTML = `<div class="bg-white dark:bg-gray-800 p-6 rounded shadow-lg max-w-sm text-center border border-gray-200 dark:border-gray-700"><p class="mb-4 text-gray-800 dark:text-white font-medium">${msg}</p><button onclick="this.parentElement.parentElement.remove()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">OK</button></div>`;
+            document.body.appendChild(div);
+        }
+
+        window.confirmAction = function(msg) { return confirm(msg); }
+
+        window.saveState = function() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(window.msraData));
+            window.dataModified = true;
+            window.updateUnsavedChangesWarning();
+        }
+
+        window.updateUnsavedChangesWarning = function() {
+            const el = document.getElementById('unsaved-changes-warning');
+            if(el) { window.dataModified ? el.classList.remove('hidden') : el.classList.add('hidden'); }
+        }
+
+        // Logic Helpers
+        window.riskMatrixLevels = [['LOW','LOW','LOW','MEDIUM','MEDIUM'],['LOW','LOW','MEDIUM','MEDIUM','HIGH'],['LOW','MEDIUM','MEDIUM','HIGH','HIGH'],['MEDIUM','MEDIUM','HIGH','HIGH','CRITICAL'],['MEDIUM','HIGH','HIGH','CRITICAL','CRITICAL']];
+        window.getRiskLevel = (l, s) => { if (!l || !s) return ''; return window.riskMatrixLevels[l-1][s-1]; };
+        window.getRiskLevelClass = (level) => { if(!level) return ''; const map = {'LOW':'risk-level-low','MEDIUM':'risk-level-medium','HIGH':'risk-level-high','CRITICAL':'risk-level-critical'}; return map[level] || 'risk-level-unknown'; };
+        window.getLLabel = (v) => ({'5':'A','4':'B','3':'C','2':'D','1':'E'}[v] || '');
+        window.getSLabel = (v) => v || '';
+        window.getFilenameBase = () => {
+            const name = window.msraData.jobInfo.jobName || 'Untitled_MSRA';
+            const now = new Date();
+            const timestamp = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getFullYear()).slice(-2)}-${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+            return `MSRA_${name.replace(/[^a-zA-Z0-9\s_]/g, '').trim().replace(/\s+/g, '_') || 'Untitled'}_${timestamp}`;
+        };
+
+        // --- GLOBAL ACTION FUNCTIONS (Directly called by HTML onclicks) ---
+        window.deleteTask = function(id) {
+            if(confirmAction(`Delete Task ${id}?`)) {
+                window.msraData.tasks = window.msraData.tasks.filter(t => t.id !== id);
+                window.msraData.tasks.forEach((t, i) => t.id = i + 1);
+                window.taskIdCounter = window.msraData.tasks.length + 1;
+                window.renderMSRATable(); window.saveState();
+            }
+        };
+
+        window.addNewTask = function() {
+            const d = document.getElementById('taskDescription').value.trim();
+            if(!d) return window.showCustomAlert('Enter Task Description.');
+            window.msraData.tasks.push({id: window.taskIdCounter++, description:d, risks:[]});
+            window.currentTaskId = window.taskIdCounter - 1;
+            window.renderMSRATable(); window.saveState();
+            document.getElementById('taskDescription').value='';
+        };
+
+        window.addRiskToCurrentTask = function() {
+            if(!window.currentTaskId) return window.showCustomAlert('Add a task first.');
+            const d = document.getElementById('riskDescription').value.trim();
+            const l = parseInt(document.getElementById('likelihood').value);
+            const i = parseInt(document.getElementById('impact').value);
+            if(!d || !l || !i) return window.showCustomAlert('Fill all risk fields.');
+            const t = window.msraData.tasks.find(x=>x.id===window.currentTaskId);
+            if(t) {
+                const nid = t.risks.length ? Math.max(...t.risks.map(r=>r.id))+1 : 1;
+                t.risks.push({id:nid, description:d, likelihood:l, impact:i, likelihoodLabel: window.getLLabel(l.toString()), impactLabel: window.getSLabel(i.toString()), initialLevel: window.getRiskLevel(l,i), countermeasure:'', residualLevel:''});
+                window.renderMSRATable(); window.saveState();
+                document.getElementById('riskDescription').value=''; document.getElementById('likelihood').value=''; document.getElementById('impact').value='';
+            }
+        };
+
+        window.openAddRiskToExistingTaskModal = function(id) {
+            window.targetTaskIdForNewRisk = id;
+            document.getElementById('addRiskModalTaskId').innerText = id;
+            document.getElementById('addRiskModalDescription').value = '';
+            document.getElementById('addRiskModalLikelihood').value = '';
+            document.getElementById('addRiskModalImpact').value = '';
+            document.getElementById('addRiskToExistingTaskModal').style.display = 'flex';
+        };
+
+        window.saveNewRiskToTask = function() {
+            const d = document.getElementById('addRiskModalDescription').value.trim();
+            const l = parseInt(document.getElementById('addRiskModalLikelihood').value);
+            const i = parseInt(document.getElementById('addRiskModalImpact').value);
+            if(!d || !l || !i) return window.showCustomAlert('Fill all fields');
+            const t = window.msraData.tasks.find(x=>x.id===window.targetTaskIdForNewRisk);
+            if(t) {
+                const nid = t.risks.length ? Math.max(...t.risks.map(r=>r.id))+1 : 1;
+                t.risks.push({id:nid, description:d, likelihood:l, impact:i, likelihoodLabel: window.getLLabel(l.toString()), impactLabel: window.getSLabel(i.toString()), initialLevel: window.getRiskLevel(l,i), countermeasure:'', residualLevel:''});
+                window.renderMSRATable(); document.getElementById('addRiskToExistingTaskModal').style.display='none'; window.saveState();
+            }
+        };
+
+        window.openInsertTaskModal = function(idx) {
+            window.insertIndexForNewTask = idx;
+            const txt = (idx === -1) ? "Inserting at beginning" : (idx === window.msraData.tasks.length - 1) ? "Inserting at end" : `Inserting after Task ${window.msraData.tasks[idx].id}`;
+            document.getElementById('insertTaskModalContext').innerText = txt;
+            document.getElementById('insertTaskModalDescription').value = '';
+            document.getElementById('insertTaskModal').style.display = 'flex';
+        };
+
+        window.performInsertTask = function() {
+            const d = document.getElementById('insertTaskModalDescription').value.trim();
+            const nt = {id:0, description:d, risks:[]};
+            const idx = (window.insertIndexForNewTask === null) ? window.msraData.tasks.length : window.insertIndexForNewTask + 1;
+            window.msraData.tasks.splice(idx, 0, nt);
+            window.msraData.tasks.forEach((t,i) => t.id=i+1);
+            window.taskIdCounter = window.msraData.tasks.length + 1;
+            window.renderMSRATable(); document.getElementById('insertTaskModal').style.display='none'; window.saveState();
+        };
+
+        window.editRisk = function(tid, rid) {
+            const t = window.msraData.tasks.find(x => x.id === tid);
+            const r = t ? t.risks.find(x => x.id === rid) : null;
+            if(!r) return;
+            window.editingRiskObject = r;
+            document.getElementById('editRiskModalRiskId').innerText = r.id;
+            document.getElementById('editRiskModalDescription').value = r.description;
+            document.getElementById('editRiskModalLikelihood').value = r.likelihood;
+            document.getElementById('editRiskModalImpact').value = r.impact;
+            document.getElementById('editRiskModal').style.display = 'flex';
+        };
+
+        window.saveEditedRisk = function() {
+            if(!window.editingRiskObject) return;
+            const d = document.getElementById('editRiskModalDescription').value.trim();
+            const l = parseInt(document.getElementById('editRiskModalLikelihood').value);
+            const i = parseInt(document.getElementById('editRiskModalImpact').value);
+            window.editingRiskObject.description = d;
+            window.editingRiskObject.likelihood = l;
+            window.editingRiskObject.impact = i;
+            window.editingRiskObject.likelihoodLabel = window.getLLabel(l.toString());
+            window.editingRiskObject.impactLabel = window.getSLabel(i.toString());
+            window.editingRiskObject.initialLevel = window.getRiskLevel(l,i);
+            if(window.editingRiskObject.countermeasure) window.editingRiskObject.residualLevel = window.getRiskLevel(window.editingRiskObject.newLikelihood, window.editingRiskObject.newImpact);
+            window.renderMSRATable(); document.getElementById('editRiskModal').style.display='none'; window.saveState();
+        };
+
+        window.addCM = function(tid, rid) {
+            const t = window.msraData.tasks.find(x => x.id === tid);
+            const r = t ? t.risks.find(x => x.id === rid) : null;
+            if(!r) return;
+            window.editingCountermeasureRisk = r;
+            document.getElementById('modalRiskId').innerText = r.id;
+            document.getElementById('modalCountermeasure').value = r.countermeasure || '';
+            document.getElementById('modalNewLikelihood').value = r.newLikelihood || '';
+            document.getElementById('modalNewImpact').value = r.newImpact || '';
+            document.getElementById('countermeasureModal').style.display = 'flex';
+        };
+
+        window.saveCountermeasure = function() {
+            if(!window.editingCountermeasureRisk) return;
+            const cm = document.getElementById('modalCountermeasure').value.trim();
+            const nl = parseInt(document.getElementById('modalNewLikelihood').value);
+            const ni = parseInt(document.getElementById('modalNewImpact').value);
+            window.editingCountermeasureRisk.countermeasure = cm;
+            window.editingCountermeasureRisk.newLikelihood = nl;
+            window.editingCountermeasureRisk.newImpact = ni;
+            window.editingCountermeasureRisk.newLikelihoodLabel = window.getLLabel(nl.toString());
+            window.editingCountermeasureRisk.newImpactLabel = window.getSLabel(ni.toString());
+            window.editingCountermeasureRisk.residualLevel = window.getRiskLevel(nl, ni);
+            window.renderMSRATable(); document.getElementById('countermeasureModal').style.display='none'; window.saveState();
+        };
+
+        window.delRisk = function(tid, rid) {
+            if(confirmAction("Delete Risk?")) {
+                const t = window.msraData.tasks.find(x => x.id === tid);
+                if(t) {
+                    t.risks = t.risks.filter(x => x.id !== rid);
+                    window.renderMSRATable(); window.saveState();
+                }
+            }
+        };
+
+        window.resetTool = function() {
+            if (confirmAction('Reset tool? This clears all data.')) {
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                window.msraData = { jobInfo: { jobName: '', preparedBy: '', contractorName: '', contractorPersonName: '', datePrepared: '', typeOfWork: [], ppesUsed: [] }, tasks: [] };
+                window.currentTaskId = null; window.taskIdCounter = 1; window.dataModified = false;
+                document.getElementById('jobName').value = ''; document.getElementById('preparedBy').value = ''; document.getElementById('contractorName').value = ''; document.getElementById('contractorPersonName').value = ''; document.getElementById('datePrepared').value = '';
+                document.getElementById('taskDescription').value = ''; document.getElementById('riskDescription').value = ''; document.getElementById('likelihood').value = ''; document.getElementById('impact').value = '';
+                document.querySelectorAll('#type-of-work-checkboxes input').forEach(cb => cb.checked = false);
+                document.querySelectorAll('#ppes-to-be-used-checkboxes input').forEach(cb => cb.checked = false);
+                window.renderMSRAInfoSummary(); window.renderMSRATable(); window.updateUnsavedChangesWarning();
+                window.showCustomAlert("Tool reset.");
+            }
+        };
+
+        // --- IMPORT/EXPORT LOGIC ---
+        // Enhanced Parsing Logic to handle newlines within quotes
+        window.parseCsvLine = (str) => {
+            const res = [];
+            let cur = '';
+            let inQuote = false;
+            for (let i = 0; i < str.length; i++) {
+                const c = str[i];
+                if (c === '"' && str[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else if (c === '"') {
+                    inQuote = !inQuote;
+                } else if (c === ',' && !inQuote) {
+                    res.push(cur);
+                    cur = '';
+                } else {
+                    cur += c;
+                }
+            }
+            res.push(cur);
+            return res;
+        };
+
+        // Parse whole CSV content properly handling newlines in quoted fields
+        window.parseCsvContent = (text) => {
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let inQuote = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                const nextC = text[i + 1];
+
+                if (c === '"') {
+                    if (inQuote && nextC === '"') {
+                        currentField += '"';
+                        i++; // Skip escaped quote
+                    } else {
+                        inQuote = !inQuote;
+                    }
+                } else if (c === ',' && !inQuote) {
+                    currentRow.push(currentField);
+                    currentField = '';
+                } else if ((c === '\n' || (c === '\r' && nextC === '\n')) && !inQuote) {
+                    currentRow.push(currentField);
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentField = '';
+                    if (c === '\r') i++; // Skip \n after \r
+                } else if (c === '\r' && !inQuote) {
+                    // Handle lone \r (Mac style old) just in case
+                    currentRow.push(currentField);
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentField = '';
+                } else {
+                    currentField += c;
+                }
+            }
+            // Push last row if exists
+            if (currentField || currentRow.length > 0) {
+                currentRow.push(currentField);
+                rows.push(currentRow);
+            }
+            return rows;
+        };
+
+        window.triggerImport = function() {
+            document.getElementById('csvFileInput').click();
+        };
+
+        window.performCsvExport = function() {
+            if (window.msraData.tasks.length === 0 && !Object.values(window.msraData.jobInfo).some(v => v)) {
+                return window.showCustomAlert('No data to export.');
+            }
+            let csv = [];
+            const q = (s) => `"${(s || '').toString().replace(/"/g, '""')}"`;
+
+            csv.push('Method Statement and Risk Assessment');
+            csv.push(`Job Name:,${q(window.msraData.jobInfo.jobName)}`);
+            csv.push(`Prepared By:,${q(window.msraData.jobInfo.preparedBy)}`);
+            csv.push(`Contractor Name:,${q(window.msraData.jobInfo.contractorName)}`);
+            csv.push(`Contractor Person Name:,${q(window.msraData.jobInfo.contractorPersonName)}`);
+            csv.push(`Date of Preparation:,${window.msraData.jobInfo.datePrepared}`);
+
+            // Work Types
+            const workTypes = Array.from(document.querySelectorAll('#type-of-work-checkboxes input')).map(i=>i.value);
+            csv.push("Type of Work:," + workTypes.join(','));
+            csv.push("," + workTypes.map(t => window.msraData.jobInfo.typeOfWork.includes(t) ? "Yes" : "No").join(','));
+
+            // PPEs
+            const ppes = Array.from(document.querySelectorAll('#ppes-to-be-used-checkboxes input')).map(i=>i.value);
+            csv.push("PPEs to be Used:," + ppes.join(','));
+            csv.push("," + ppes.map(p => window.msraData.jobInfo.ppesUsed.includes(p) ? "Yes" : "No").join(','));
+
+            csv.push('');
+            csv.push('Task ID,Task Description,Risk ID,Risk Description,Initial Likelihood,Initial Severity,Initial Risk Level,Countermeasure,New Likelihood,New Severity,Residual Risk Level');
+
+            window.msraData.tasks.forEach(t => {
+                if (t.risks.length === 0) {
+                    csv.push(`${t.id},${q(t.description)},,,,,,,,,`);
+                } else {
+                    t.risks.forEach(r => {
+                        csv.push(`${t.id},${q(t.description)},${r.id},${q(r.description)},${r.likelihoodLabel},${r.impactLabel},${r.initialLevel},${q(r.countermeasure)},${r.newLikelihoodLabel},${r.newImpactLabel},${r.residualLevel}`);
+                    });
+                }
+            });
+
+            const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = window.getFilenameBase() + ".csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.dataModified = false;
+            window.updateUnsavedChangesWarning();
+        };
+
+        window.importCsvFile = function(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    // Use the robust parser
+                    const rows = window.parseCsvContent(content);
+                    
+                    window.msraData = { jobInfo: { jobName: '', preparedBy: '', contractorName: '', contractorPersonName: '', datePrepared: '', typeOfWork: [], ppesUsed: [] }, tasks: [] };
+                    
+                    let section = 'header';
+                    
+                    for(let i=0; i<rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length === 0 || (row.length === 1 && !row[0].trim())) continue;
+                        
+                        const firstCol = row[0].trim();
+                        
+                        // Parse Header Info
+                        if(firstCol.includes('Job Name:')) window.msraData.jobInfo.jobName = row[1] || '';
+                        if(firstCol.includes('Prepared By:')) window.msraData.jobInfo.preparedBy = row[1] || '';
+                        if(firstCol.includes('Contractor Name:')) window.msraData.jobInfo.contractorName = row[1] || '';
+                        if(firstCol.includes('Contractor Person Name:')) window.msraData.jobInfo.contractorPersonName = row[1] || '';
+                        if(firstCol.includes('Date of Preparation:')) window.msraData.jobInfo.datePrepared = row[1] || '';
+
+                        // Type of Work
+                        if(firstCol.startsWith('Type of Work:')) {
+                            const nextRow = rows[i+1];
+                            if(nextRow) {
+                                for(let j=1; j<row.length; j++) {
+                                    const header = row[j]?.trim();
+                                    const val = nextRow[j]?.trim();
+                                    if(header && val && val.toLowerCase() === 'yes') {
+                                        window.msraData.jobInfo.typeOfWork.push(header);
+                                    }
+                                }
+                                i++; // Skip values row
+                            }
+                        }
+                        // PPEs
+                        if(firstCol.startsWith('PPEs to be Used:')) {
+                            const nextRow = rows[i+1];
+                            if(nextRow) {
+                                for(let j=1; j<row.length; j++) {
+                                    const header = row[j]?.trim();
+                                    const val = nextRow[j]?.trim();
+                                    if(header && val && val.toLowerCase() === 'yes') {
+                                        window.msraData.jobInfo.ppesUsed.push(header);
+                                    }
+                                }
+                                i++; // Skip values row
+                            }
+                        }
+
+                        if(firstCol.startsWith('Task ID')) { section = 'data'; continue; }
+
+                        if(section === 'data') {
+                            if (row.length >= 2 && !isNaN(parseInt(row[0]))) {
+                                const tid = parseInt(row[0]);
+                                let task = window.msraData.tasks.find(t => t.id === tid);
+                                if (!task) {
+                                    task = { id: tid, description: row[1], risks: [] };
+                                    window.msraData.tasks.push(task);
+                                }
+                                if (row[2] && row[3]) {
+                                    task.risks.push({
+                                        id: parseInt(row[2]), description: row[3],
+                                        likelihoodLabel: row[4], impactLabel: row[5], initialLevel: row[6],
+                                        countermeasure: row[7], newLikelihoodLabel: row[8], newImpactLabel: row[9], residualLevel: row[10]
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    if(window.msraData.tasks.length > 0) window.taskIdCounter = Math.max(...window.msraData.tasks.map(t=>t.id)) + 1;
+                    
+                    window.renderMSRAInfoSummary();
+                    window.renderMSRATable();
+                    window.saveState();
+                    window.showCustomAlert('Import Successful');
+                } catch (err) {
+                    console.error(err);
+                    window.showCustomAlert('Import failed. Check file format.');
+                }
+                input.value = ''; 
+            };
+            reader.readAsText(file);
+        };
+
+        window.downloadTemplate = function() {
+             let csv = [];
+             csv.push('Method Statement and Risk Assessment');
+             csv.push('Job Name:,');
+             csv.push('Prepared By:,');
+             csv.push('Contractor Name:,');
+             csv.push('Contractor Person Name:,');
+             csv.push('Date of Preparation:,');
+             
+             // Dynamic Template Generation based on current checkbox definitions
+             const workTypeInputs = Array.from(document.querySelectorAll('#type-of-work-checkboxes input'));
+             const workTypeHeaders = "Type of Work:," + workTypeInputs.map(i=>i.value).join(',');
+             const workTypeValues = "," + workTypeInputs.map(()=>"No").join(',');
+             csv.push(workTypeHeaders);
+             csv.push(workTypeValues);
+
+             const ppeInputs = Array.from(document.querySelectorAll('#ppes-to-be-used-checkboxes input'));
+             const ppeHeaders = "PPEs to be Used:," + ppeInputs.map(i=>i.value).join(',');
+             const ppeValues = "," + ppeInputs.map(()=>"No").join(',');
+             csv.push(ppeHeaders);
+             csv.push(ppeValues);
+             
+             csv.push('');
+             csv.push('Task ID,Task Description,Risk ID,Risk Description,Initial Likelihood,Initial Severity,Initial Risk Level,Countermeasure,New Likelihood,New Severity,Residual Risk Level');
+             csv.push('1,"Example Task",1,"Example Risk","A","5","CRITICAL","Example Measure","E","1","LOW"');
+             
+             const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+             const link = document.createElement('a');
+             link.href = URL.createObjectURL(blob);
+             link.download = 'msra_template.csv';
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
+        };
+
+        window.convertExcelCsv = function() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.csv';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const content = evt.target.result;
+                    const lines = content.split(/\r?\n/);
+                    // Remove Excel's trailing commas
+                    const cleanLines = lines.map(l => l.replace(/,+$/, '').trim()).filter(l => l);
+                    const blob = new Blob([cleanLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = file.name.replace('.csv', '_converted.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.showCustomAlert('File Converted');
+                };
+                reader.readAsText(file);
+            };
+            fileInput.click();
+        };
+
+        // --- RENDER FUNCTIONS (Global) ---
+        window.renderMSRAInfoSummary = function() {
+            const i = window.msraData.jobInfo;
+            document.getElementById('jobName').value = i.jobName;
+            document.getElementById('preparedBy').value = i.preparedBy;
+            document.getElementById('contractorName').value = i.contractorName;
+            document.getElementById('contractorPersonName').value = i.contractorPersonName;
+            document.getElementById('datePrepared').value = i.datePrepared;
+            
+            document.querySelectorAll('#type-of-work-checkboxes input').forEach(c => c.checked = i.typeOfWork.includes(c.value));
+            document.querySelectorAll('#ppes-to-be-used-checkboxes input').forEach(c => c.checked = i.ppesUsed.includes(c.value));
+
+            const workHtml = i.typeOfWork.length ? `<div class="flex flex-wrap gap-2 mt-1">${i.typeOfWork.map(x=>`<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${x.replace(/_/g,' ')}</span>`).join('')}</div>` : '<span class="text-gray-400 italic text-sm">None</span>';
+            const ppeHtml = i.ppesUsed.length ? `<div class="flex flex-wrap gap-2 mt-1">${i.ppesUsed.map(x=>`<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">${x.replace(/_/g,' ')}</span>`).join('')}</div>` : '<span class="text-gray-400 italic text-sm">None</span>';
+
+            document.getElementById('msra-summary-info').innerHTML = `
+                <div><strong class="text-xs uppercase text-gray-500">Job</strong><div class="font-medium">${i.jobName || '-'}</div></div>
+                <div><strong class="text-xs uppercase text-gray-500">Date</strong><div class="font-medium">${i.datePrepared || '-'}</div></div>
+                <div><strong class="text-xs uppercase text-gray-500">Prepared By</strong><div class="font-medium">${i.preparedBy || '-'}</div></div>
+                <div><strong class="text-xs uppercase text-gray-500">Contractor</strong><div class="font-medium">${i.contractorName || '-'}</div></div>
+                <div><strong class="text-xs uppercase text-gray-500">Person</strong><div class="font-medium">${i.contractorPersonName || '-'}</div></div>
+                <div class="col-span-full border-t pt-2 dark:border-gray-600"><strong class="text-xs uppercase text-gray-500">Type of Work</strong>${workHtml}</div>
+                <div class="col-span-full"><strong class="text-xs uppercase text-gray-500">PPE</strong>${ppeHtml}</div>
+            `;
+        }
+
+        window.renderMSRATable = function() {
+            const tbody = document.querySelector('#msraTable tbody');
+            tbody.innerHTML = '';
+            window.msraData.tasks.forEach((t, i) => {
+                const tr = tbody.insertRow();
+                tr.className = 'bg-gray-50 dark:bg-gray-700 font-semibold text-gray-700 dark:text-gray-200 border-b dark:border-gray-600';
+                tr.innerHTML = `<td colspan="12" class="p-3">
+                    <div class="flex justify-between items-center">
+                        <span class="whitespace-pre-wrap">Task ${t.id}: ${t.description}</span>
+                        <div class="flex gap-2 no-print">
+                            <button class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700" onclick="window.openAddRiskToExistingTaskModal(${t.id})">Add Risk</button>
+                            <button class="bg-purple-600 text-white text-xs px-2 py-1 rounded hover:bg-purple-700" onclick="window.openInsertTaskModal(${i})">Insert Task</button>
+                            <button class="bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700" onclick="window.deleteTask(${t.id})">Delete Task</button>
+                        </div>
+                    </div></td>`;
+                
+                if(!t.risks.length) { tbody.insertRow().innerHTML = `<td colspan="12" class="text-center p-2 text-gray-400 italic">No risks.</td>`; }
+                else {
+                    t.risks.forEach(r => {
+                        const row = tbody.insertRow();
+                        const cls = "px-2 py-2 border-b dark:border-gray-600 align-top text-sm";
+                        row.innerHTML = `
+                            <td class="${cls} text-center">${t.id}</td><td class="${cls}">${t.description}</td>
+                            <td class="${cls} text-center">${r.id}</td><td class="${cls} whitespace-pre-wrap">${r.description}</td>
+                            <td class="${cls} text-center">${r.likelihoodLabel}</td><td class="${cls} text-center">${r.impactLabel}</td>
+                            <td class="${cls} text-center ${window.getRiskLevelClass(r.initialLevel)} rounded">${r.initialLevel}</td>
+                            <td class="${cls} whitespace-pre-wrap">${r.countermeasure||''}</td>
+                            <td class="${cls} text-center">${r.newLikelihoodLabel||''}</td><td class="${cls} text-center">${r.newImpactLabel||''}</td>
+                            <td class="${cls} text-center ${window.getRiskLevelClass(r.residualLevel)} rounded">${r.residualLevel||''}</td>
+                            <td class="${cls} text-center no-print">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button class="text-amber-500 hover:text-amber-600 p-1" title="Edit Risk" onclick="window.editRisk(${t.id},${r.id})"><i class="fa-solid fa-edit"></i></button>
+                                    <button class="text-gray-500 hover:text-blue-600 p-1" title="Add Countermeasure" onclick="window.addCM(${t.id},${r.id})"><i class="fa-solid fa-shield-halved"></i></button>
+                                    <button class="text-red-500 hover:text-red-600 p-1" title="Delete Risk" onclick="window.delRisk(${t.id},${r.id})"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </td>
+                            <td class="${cls}"></td>
+                        `;
+                    });
+                }
+            });
+        }
+
+        // --- START: RISK MATRIX HTML ---
+        const RISK_MATRIX_HTML = `
+            <div class="risk-matrix-table-container mt-8 bg-white p-4 rounded-lg shadow border border-gray-200">
+                <h3 style="text-align:center; font-size: 1.25rem; font-weight: bold; margin-bottom: 15px; color: #1f2937;">Risk Matrix</h3>
+                <table class="risk-matrix-table w-full text-xs text-center border-collapse border border-gray-300">
                     <thead>
                         <tr>
-                            <th title="Task ID">Task<br>ID</th>
-                            <th title="Task Description">Task<br>Desc.</th>
-                            <th title="Risk ID">Risk<br>ID</th>
-                            <th title="Risk Description">Risk<br>Desc.</th>
-                            <th title="Initial Likelihood">Init.<br>L</th>
-                            <th title="Initial Severity">Init.<br>S</th>
-                            <th title="Initial Risk Level">Init.<br>Risk Level</th>
-                            <th title="Countermeasure">Countermeasure</th>
-                            <th title="New Likelihood">New<br>L</th>
-                            <th title="New Severity">New<br>S</th>
-                            <th title="Residual Risk Level">Residual<br>Risk Level</th>
-                            <th title="Risk Actions">Risk<br>Actions</th>
-                            <th title="Task Actions">Task<br>Actions</th>
+                            <th class="diagonal-cell border border-gray-300 bg-gray-100 p-2 font-bold text-gray-700" style="width: 150px; height: 80px;"><span class="absolute top-1 right-1 text-[10px]">Severity</span><span class="absolute bottom-1 left-1 text-[10px]">Likelihood</span></th>
+                            <th class="border border-gray-300 bg-gray-100 p-2 font-bold text-gray-700">1. Insignificant</th>
+                            <th class="border border-gray-300 bg-gray-100 p-2 font-bold text-gray-700">2. Minor</th>
+                            <th class="border border-gray-300 bg-gray-100 p-2 font-bold text-gray-700">3. Moderate</th>
+                            <th class="border border-gray-300 bg-gray-100 p-2 font-bold text-gray-700">4. Major</th>
+                            <th class="border border-gray-300 bg-gray-100 p-2 font-bold text-gray-700">5. Catastrophic</th>
                         </tr>
                     </thead>
                     <tbody>
-                        </tbody>
+                        <tr><td class="border border-gray-300 bg-gray-50 p-2 font-semibold text-left text-gray-700">A. Almost certain</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#f8d7da] text-[#721c24]">HIGH</td><td class="border border-gray-300 p-2 font-bold bg-[#f8d7da] text-[#721c24]">HIGH</td><td class="border border-gray-300 p-2 font-bold bg-[#dc3545] text-white">CRITICAL</td><td class="border border-gray-300 p-2 font-bold bg-[#dc3545] text-white">CRITICAL</td></tr>
+                        <tr><td class="border border-gray-300 bg-gray-50 p-2 font-semibold text-left text-gray-700">B. Likely</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#f8d7da] text-[#721c24]">HIGH</td><td class="border border-gray-300 p-2 font-bold bg-[#f8d7da] text-[#721c24]">HIGH</td><td class="border border-gray-300 p-2 font-bold bg-[#dc3545] text-white">CRITICAL</td></tr>
+                        <tr><td class="border border-gray-300 bg-gray-50 p-2 font-semibold text-left text-gray-700">C. Possible</td><td class="border border-gray-300 p-2 font-bold bg-[#d4edda] text-[#155724]">LOW</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#f8d7da] text-[#721c24]">HIGH</td><td class="border border-gray-300 p-2 font-bold bg-[#f8d7da] text-[#721c24]">HIGH</td></tr>
+                        <tr><td class="border border-gray-300 bg-gray-50 p-2 font-semibold text-left text-gray-700">D. Unlikely</td><td class="border border-gray-300 p-2 font-bold bg-[#d4edda] text-[#155724]">LOW</td><td class="border border-gray-300 p-2 font-bold bg-[#d4edda] text-[#155724]">LOW</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#f8d7da] text-[#721c24]">HIGH</td></tr>
+                        <tr><td class="border border-gray-300 bg-gray-50 p-2 font-semibold text-left text-gray-700">E. Rare</td><td class="border border-gray-300 p-2 font-bold bg-[#d4edda] text-[#155724]">LOW</td><td class="border border-gray-300 p-2 font-bold bg-[#d4edda] text-[#155724]">LOW</td><td class="border border-gray-300 p-2 font-bold bg-[#d4edda] text-[#155724]">LOW</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td><td class="border border-gray-300 p-2 font-bold bg-[#fff3cd] text-[#856404]">MEDIUM</td></tr>
+                    </tbody>
                 </table>
             </div>
-            <div style="margin-top: 20px; text-align: center;">
-                <button id="exportCsvBtn">Export MSRA to CSV</button>
-                <button id="exportImageBtn">Export MSRA to Image</button>
-                <button id="exportPdfBtn">Export MSRA to PDF</button>
-            </div>
-        </div>
-    </div>
+        `;
 
-    <div id="countermeasureModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <button class="modal-close-btn" id="closeModalBtn">×</button>
-            <h2>Add Countermeasure & Residual Risk</h2>
-            <p>For Risk ID: <span id="modalRiskId"></span></p>
-            <div class="form-group">
-                <label for="modalCountermeasure">Countermeasure / Control Measures:</label>
-                <textarea id="modalCountermeasure" rows="3" placeholder="Describe the control measures"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="modalNewLikelihood">New Likelihood (After Countermeasure):</label>
-                <select id="modalNewLikelihood">
-                    <option value="">Select New Likelihood</option>
-                    <option value="5">A - Almost certain to occur in most circumstances</option>
-                    <option value="4">B - Likely to occur frequently</option>
-                    <option value="3">C - Possibly and likely to occur at sometime</option>
-                    <option value="2">D - Unlikely to occur but could happen</option>
-                    <option value="1">E - May occur but only in rare circumstances</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="modalNewImpact">New Severity (After Countermeasure):</label>
-                <select id="modalNewImpact">
-                    <option value="">Select New Severity</option>
-                    <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
-                    <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
-                    <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
-                    <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
-                    <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
-                </select>
-            </div>
-            <button id="saveCountermeasureBtn">Save Countermeasure</button>
-        </div>
-    </div>
+        // --- DOM LOADED LISTENER (Initial setup only) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load from LocalStorage
+            const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if(saved) {
+                try { 
+                    const p = JSON.parse(saved); 
+                    if(p && p.jobInfo && Array.isArray(p.tasks)) {
+                        window.msraData = p; 
+                        if(window.msraData.tasks.length > 0) {
+                            window.taskIdCounter = Math.max(...window.msraData.tasks.map(t=>t.id)) + 1;
+                        }
+                    }
+                } catch(e) { console.error(e); }
+            }
 
-    <div id="addRiskToExistingTaskModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <button class="modal-close-btn" id="closeAddRiskModalBtn">×</button>
-            <h2>Add Risk to Task <span id="addRiskModalTaskId"></span></h2>
-            <div class="form-group">
-                <label for="addRiskModalDescription">Risk Description:</label>
-                <textarea id="addRiskModalDescription" rows="2" placeholder="e.g., If Cables disconnected without incoming supply cutoff, will result in electrocution."></textarea>
-            </div>
-            <div class="form-group">
-                <label for="addRiskModalLikelihood">Initial Likelihood:</label>
-                <select id="addRiskModalLikelihood">
-                    <option value="">Select Likelihood</option>
-                    <option value="5">A - Almost certain to occur in most circumstances</option>
-                    <option value="4">B - Likely to occur frequently</option>
-                    <option value="3">C - Possibly and likely to occur at sometime</option>
-                    <option value="2">D - Unlikely to occur but could happen</option>
-                    <option value="1">E - May occur but only in rare circumstances</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="addRiskModalImpact">Initial Severity:</label>
-                <select id="addRiskModalImpact">
-                    <option value="">Select Severity</option>
-                    <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
-                    <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
-                    <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
-                    <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
-                    <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
-                </select>
-            </div>
-            <button id="saveAddRiskModalBtn">Add Risk</button>
-        </div>
-    </div>
+            // Dark Mode Init
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const storedTheme = localStorage.getItem('theme');
+            
+            // Apply theme based on logic: stored > system > default(light)
+            if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            
+            darkModeToggle.addEventListener('click', () => {
+                const html = document.documentElement;
+                if(html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    html.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
 
-    <div id="editRiskModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <button class="modal-close-btn" id="closeEditRiskModalBtn">×</button>
-            <h2>Edit Risk <span id="editRiskModalRiskId"></span></h2>
-            <div class="form-group">
-                <label for="editRiskModalDescription">Risk Description:</label>
-                <textarea id="editRiskModalDescription" rows="2"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="editRiskModalLikelihood">Initial Likelihood:</label>
-                <select id="editRiskModalLikelihood">
-                    <option value="5">A - Almost certain to occur in most circumstances</option>
-                    <option value="4">B - Likely to occur frequently</option>
-                    <option value="3">C - Possibly and likely to occur at sometime</option>
-                    <option value="2">D - Unlikely to occur but could happen</option>
-                    <option value="1">E - May occur but only in rare circumstances</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="editRiskModalImpact">Initial Severity:</label>
-                <select id="editRiskModalImpact">
-                    <option value="1">1 - Insignificant (Dealt with by in-house first aid)</option>
-                    <option value="2">2 - Minor (Treated by medical professionals, hospital out-patient stay)</option>
-                    <option value="3">3 - Moderate (Significant non-permanent injury, overnight hospital stay)</option>
-                    <option value="4">4 - Major (Extensive permanent injury e.g. loss of fingers, extended hospital stay)</option>
-                    <option value="5">5 - Catastrophic (Death, permanent disabling injury e.g. loss of hand, paralysis, injury to multiple people)</option>
-                </select>
-            </div>
-            <button id="saveEditRiskModalBtn">Save Changes</button>
-        </div>
-    </div>
+            // Bind Static Inputs
+            ['jobName','preparedBy','contractorName','contractorPersonName','datePrepared'].forEach(id => {
+                document.getElementById(id).addEventListener('input', (e) => { 
+                    window.msraData.jobInfo[id] = e.target.value; 
+                    window.renderMSRAInfoSummary(); 
+                    window.saveState(); 
+                });
+            });
 
-    <div id="insertTaskModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <button class="modal-close-btn" id="closeInsertTaskModalBtn">×</button>
-            <h2>Insert New Task</h2>
-            <p id="insertTaskModalContext"></p>
-            <div class="form-group">
-                <label for="insertTaskModalDescription">Task Description:</label>
-                <textarea id="insertTaskModalDescription" rows="3" placeholder="e.g., New task description"></textarea>
-            </div>
-            <button id="saveInsertTaskModalBtn">Insert Task</button>
-        </div>
-    </div>
+            document.querySelectorAll('#type-of-work-checkboxes input').forEach(cb => {
+                cb.addEventListener('change', () => { 
+                    if(cb.checked) window.msraData.jobInfo.typeOfWork.push(cb.value); 
+                    else window.msraData.jobInfo.typeOfWork = window.msraData.jobInfo.typeOfWork.filter(x=>x!==cb.value);
+                    window.renderMSRAInfoSummary(); window.saveState(); 
+                });
+            });
+            document.querySelectorAll('#ppes-to-be-used-checkboxes input').forEach(cb => {
+                cb.addEventListener('change', () => { 
+                    if(cb.checked) window.msraData.jobInfo.ppesUsed.push(cb.value); 
+                    else window.msraData.jobInfo.ppesUsed = window.msraData.jobInfo.ppesUsed.filter(x=>x!==cb.value);
+                    window.renderMSRAInfoSummary(); window.saveState(); 
+                });
+            });
 
-    <div id="helpModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <button class="modal-close-btn" id="closeHelpModalBtn">×</button>
-            <h2>What is an MSRA?</h2>
-            <p>
-                A Method Statement and Risk Assessment (MSRA) is a comprehensive document that details how a specific task will be performed safely. It outlines the step-by-step procedure, required equipment, and personnel, while simultaneously identifying potential hazards at each stage. The MSRA then evaluates the risks associated with these hazards and specifies the necessary control measures to minimize or eliminate them, ensuring a safe working environment.
-            </p>
-            <h3>How To Do MSRA: THRIVE</h3>
-            <ul>
-                <li><strong>T</strong>ask: Breakdown job to step by step task.</li>
-                <li><strong>H</strong>azards: Identify what could cause harm.</li>
-                <li><strong>R</strong>isks: Assess likelihood and severity of harm.</li>
-                <li><strong>I</strong>mplement Controls: Detail how to prevent harm (safe methods).</li>
-                <li><strong>V</strong>erify & Review: Check, assign responsibility, and sign off.</li>
-                <li><strong>E</strong>xecute Safely: List each action in order.</li>
-            </ul>
-            <div class="video-container">
-                <iframe src="https://www.youtube.com/embed/c8TpqBop-DI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
-            <p>For more information write to <a href="mailto:sagkavin@gmail.com">Kavin S A G</a></p>
-        </div>
-    </div>
+            // Initial Render
+            window.renderMSRAInfoSummary();
+            window.renderMSRATable();
+            window.updateUnsavedChangesWarning();
+        });
 
-    <script src="script.js"></script>
+        // PDF/Image Export Logic
+        window.createDocumentView = async function(format) {
+            if (window.msraData.tasks.length === 0 && !Object.values(window.msraData.jobInfo).some(v => v)) {
+                return window.showCustomAlert('No data to export.');
+            }
+
+            const btn = format === 'pdf' ? document.getElementById('exportPdfBtn') : document.getElementById('exportImageBtn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Generating...'; 
+            btn.disabled = true;
+            
+            // --- Force Light Mode ---
+            const wasDark = document.documentElement.classList.contains('dark');
+            if (wasDark) {
+                document.documentElement.classList.remove('dark');
+            }
+
+            // Hide non-print elements
+            document.querySelectorAll('.no-print, button, input, textarea, .checkbox-group, #unsaved-changes-warning').forEach(el => el.classList.add('hidden-for-export'));
+            // Ensure table is fully visible
+            const tableContainer = document.querySelector('.table-container');
+            const oldOverflow = tableContainer.style.overflow;
+            tableContainer.style.overflow = 'visible';
+
+            // Add Signature Block
+            const sigBlock = document.createElement('div');
+            sigBlock.className = 'mt-8 border-t border-gray-300 pt-4 flex justify-around text-sm text-gray-700'; // Removed dark classes
+            sigBlock.innerHTML = `
+                <div class="text-center">
+                    <div class="border-b border-black w-48 mb-1"></div>
+                    <div class="font-bold">Prepared by: ${window.msraData.jobInfo.preparedBy || ''}</div>
+                    <div class="text-xs">${window.msraData.jobInfo.datePrepared || ''}</div>
+                </div>
+                <div class="text-center"><div class="border-b border-black w-48 mb-1"></div><div class="font-bold">Checked by</div></div>
+                <div class="text-center"><div class="border-b border-black w-48 mb-1"></div><div class="font-bold">Approved by</div></div>
+            `;
+            const sec = document.getElementById('msra-overview-section');
+            sec.appendChild(sigBlock);
+
+            // Add Risk Matrix
+            const matrixContainer = document.createElement('div');
+            matrixContainer.innerHTML = RISK_MATRIX_HTML;
+            sec.appendChild(matrixContainer);
+
+            try {
+                // Ensure the background color is explicitly set for html2canvas
+                const backgroundColor = '#ffffff'; // Force white background
+                
+                const canvas = await html2canvas(sec, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false, 
+                    backgroundColor: backgroundColor,
+                    // Fix for potential layout shifting during capture
+                    onclone: (clonedDoc) => {
+                        const clonedSec = clonedDoc.getElementById('msra-overview-section');
+                        if (clonedSec) {
+                            clonedSec.style.width = sec.offsetWidth + 'px';
+                        }
+                    }
+                });
+                
+                if (format === 'pdf') {
+                    // Check if jsPDF is available via UMD global
+                    const { jsPDF } = window.jspdf;
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const w = 210; 
+                    const h = 297; 
+                    const imgH = canvas.height * w / canvas.width;
+                    let heightLeft = imgH; 
+                    let pos = 0;
+                    
+                    pdf.addImage(imgData, 'PNG', 0, pos, w, imgH);
+                    heightLeft -= h;
+                    while(heightLeft >= 0) {
+                        pos = heightLeft - imgH;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, pos, w, imgH);
+                        heightLeft -= h;
+                    }
+                    pdf.save(`${window.getFilenameBase()}.pdf`);
+                } else {
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    link.download = `${window.getFilenameBase()}.png`;
+                    link.click();
+                }
+            } catch(e) { 
+                console.error(e); 
+                window.showCustomAlert('Export failed. Please check console for details.'); 
+            } finally {
+                btn.textContent = originalText; btn.disabled = false;
+                if (sec.contains(sigBlock)) sec.removeChild(sigBlock);
+                if (sec.contains(matrixContainer)) sec.removeChild(matrixContainer);
+                document.querySelectorAll('.hidden-for-export').forEach(el => el.classList.remove('hidden-for-export'));
+                tableContainer.style.overflow = oldOverflow;
+                
+                // --- Restore Dark Mode if needed ---
+                if (wasDark) {
+                    document.documentElement.classList.add('dark');
+                }
+            }
+        };
+    </script>
 </body>
 </html>
